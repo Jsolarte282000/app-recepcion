@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Formulario de Recepción</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#f6f8fa;margin:20px;}
+    h1{color:#1f4e79;}
+    h2{background:#1f4e79;color:white;padding:8px;border-radius:6px;font-size:18px;}
+    label{font-weight:bold;margin-top:10px;display:block;}
+    input,select{width:100%;padding:8px;margin-top:5px;border:1px solid #ccc;border-radius:5px;font-size:15px;box-sizing:border-box;}
+    input:valid{border-color:#28a745;}input:invalid{border-color:#dc3545;}
+    .error-msg{color:#dc3545;font-size:13px;display:none;}
+    button{margin-top:15px;background:#28a745;color:white;border:none;padding:12px;border-radius:8px;width:100%;font-size:16px;cursor:pointer;}
+    button:hover{background:#218838;}
+    .hidden{display:none;}
+  </style>
+</head>
+<body>
+<h1>Formulario de Recepción de Flores</h1>
+
+<form id="recepcionForm" action="/enviar" method="POST" novalidate>
+
+  <h2>Información General</h2>
+  <label>Fecha:</label>
+  <input type="datetime-local" name="fecha" required>
+
+  <label>Responsable:</label>
+  <select name="responsable" required>
+    {% for r in config['responsables'] %}
+      <option value="{{r}}">{{r}}</option>
+    {% endfor %}
+  </select>
+
+  <label>Finca:</label>
+  <select id="finca" name="finca" onchange="mostrarBloques()">
+    <option value="Malchigui">Malchigui</option>
+    <option value="Pygan">Pygan</option>
+    <option value="Urcuquí">Urcuquí</option>
+    <option value="Mindo">Mindo</option>
+  </select>
+
+  <div id="bloqueDiv">
+    <label>Bloque:</label>
+    <select name="bloque">
+      {% for b in config['bloques']['Malchigui'] %}
+        <option value="{{b}}">{{b}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <label>Cultivo:</label>
+  <select id="cultivo" name="cultivo" onchange="filtrarVariedades()" required>
+    {% for c in config['cultivos'].keys() %}
+      <option value="{{c}}">{{c}}</option>
+    {% endfor %}
+  </select>
+
+  <div id="variedadDiv">
+    <label>Variedad:</label>
+    <select id="variedad" name="variedad"></select>
+  </div>
+
+  <h2>Puntos de corte</h2>
+  <label>Total de tallos:</label>
+  <input type="number" id="totalTallos" name="tallos_total" min="1" max="30" required>
+  <span class="error-msg" id="error-total">Debe ingresar un valor entre 1 y 30.</span>
+
+  <label>Punto de corte normal:</label>
+  <input type="number" name="pc_normal" min="0"><span class="error-msg"></span>
+
+  <label>Punto de corte abierto:</label>
+  <input type="number" name="pc_abierto" min="0"><span class="error-msg"></span>
+
+  <label>Punto de corte cerrado:</label>
+  <input type="number" name="pc_cerrado" min="0"><span class="error-msg"></span>
+
+  <label>Punto de corte poda:</label>
+  <input type="number" name="pc_poda" min="0"><span class="error-msg"></span>
+
+  <span class="error-msg" id="error-suma">La suma de los puntos de corte debe ser igual al total de tallos.</span>
+
+  <h2>Daños Mecánicos</h2>
+  <label>¿Hay daños mecánicos?</label>
+  <select id="danios" name="danios" onchange="toggleSeccion('daniosDiv',this.value)">
+    <option>No</option><option>Sí</option>
+  </select>
+  <div id="daniosDiv" class="hidden">
+    <input type="number" name="descabezados" placeholder="Descabezados" min="0"><span class="error-msg"></span>
+    <input type="number" name="rotos" placeholder="Rotos" min="0"><span class="error-msg"></span>
+    <input type="number" name="deshidratados" placeholder="Deshidratados" min="0"><span class="error-msg"></span>
+    <input type="number" name="senescentes" placeholder="Senescentes" min="0"><span class="error-msg"></span>
+    <input type="number" name="pink" placeholder="Pink" min="0"><span class="error-msg"></span>
+  </div>
+
+  <h2>Enfermedades</h2>
+  <label>¿Hay enfermedades?</label>
+  <select id="enfermedades" name="enfermedades" onchange="toggleSeccion('enfermedadesDiv',this.value)">
+    <option>No</option><option>Sí</option>
+  </select>
+  <div id="enfermedadesDiv" class="hidden">
+    <input type="number" name="alt" placeholder="Alternaria" min="0"><span class="error-msg"></span>
+    <input type="number" name="bot" placeholder="Botrytis" min="0"><span class="error-msg"></span>
+    <input type="number" name="polvoso" placeholder="Polvoso" min="0"><span class="error-msg"></span>
+    <input type="number" name="roya" placeholder="Roya" min="0"><span class="error-msg"></span>
+    <input type="number" name="velloso" placeholder="Velloso" min="0"><span class="error-msg"></span>
+    <input type="text" name="otros_enf" placeholder="Otros">
+  </div>
+
+  <h2>Plagas</h2>
+  <label>¿Hay plagas?</label>
+  <select id="plagas" name="plagas" onchange="toggleSeccion('plagasDiv',this.value)">
+    <option>No</option><option>Sí</option>
+  </select>
+  <div id="plagasDiv" class="hidden">
+    <input type="number" name="trips" placeholder="Trips" min="0"><span class="error-msg"></span>
+    <input type="number" name="afidos" placeholder="Áfidos" min="0"><span class="error-msg"></span>
+    <input type="number" name="chinches" placeholder="Chinches" min="0"><span class="error-msg"></span>
+    <input type="number" name="abejas" placeholder="Abejas" min="0"><span class="error-msg"></span>
+    <input type="number" name="acaros" placeholder="Ácaros" min="0"><span class="error-msg"></span>
+    <input type="number" name="minador" placeholder="Minador" min="0"><span class="error-msg"></span>
+    <input type="number" name="babosa" placeholder="Babosas" min="0"><span class="error-msg"></span>
+    <input type="number" name="caracoles" placeholder="Caracoles" min="0"><span class="error-msg"></span>
+    <input type="number" name="moscablanca" placeholder="Mosca Blanca" min="0"><span class="error-msg"></span>
+    <input type="number" name="cochinillas" placeholder="Cochinillas" min="0"><span class="error-msg"></span>
+    <input type="number" name="mariposas" placeholder="Mariposas" min="0"><span class="error-msg"></span>
+    <input type="number" name="escarabajos" placeholder="Escarabajos" min="0"><span class="error-msg"></span>
+  </div>
+
+  <button type="submit">Enviar</button>
+</form>
+
+<script>
+  const cultivos={{config['cultivos']|tojson}};
+  function filtrarVariedades(){
+    const cultivoSel=document.getElementById("cultivo").value;
+    const div=document.getElementById("variedadDiv");
+    const selectVar=document.getElementById("variedad");
+    selectVar.innerHTML="";
+    const vars=cultivos[cultivoSel];
+    if(vars && vars.length>0){
+      vars.forEach(v=>{
+        const opt=document.createElement("option");
+        opt.value=v; opt.textContent=v;
+        selectVar.appendChild(opt);
+      });
+      div.style.display='block';
+    }else{
+      div.style.display='none';
+    }
+  }
+  window.onload=filtrarVariedades;
+  function toggleSeccion(id,val){document.getElementById(id).style.display=(val==='Sí')?'block':'none';}
+  function mostrarBloques(){document.getElementById('bloqueDiv').style.display=(document.getElementById('finca').value==='Malchigui')?'block':'none';}
+
+  const form=document.getElementById('recepcionForm');
+  const totalInput=document.getElementById('totalTallos');
+  form.addEventListener('input',()=>{
+    const total=parseInt(totalInput.value)||0;
+    const inputs=form.querySelectorAll('input[type="number"]:not(#totalTallos)');
+    inputs.forEach(inp=>{
+      const err=inp.nextElementSibling;
+      if(inp.value&&parseInt(inp.value)>total){inp.style.borderColor='#dc3545';err.textContent=`No puede ser mayor que ${total} tallos.`;err.style.display='block';}
+      else{inp.style.borderColor='#28a745';err.style.display='none';}
+    });
+    const normal=parseInt(form.pc_normal.value)||0;
+    const abierto=parseInt(form.pc_abierto.value)||0;
+    const cerrado=parseInt(form.pc_cerrado.value)||0;
+    const poda=parseInt(form.pc_poda.value)||0;
+    const suma=normal+abierto+cerrado+poda;
+    const errSuma=document.getElementById('error-suma');
+    if(total>0&&suma!==total){errSuma.style.display='block';}
+    else{errSuma.style.display='none';}
+  });
+  form.addEventListener('submit',e=>{
+    const total=parseInt(totalInput.value)||0;
+    const normal=parseInt(form.pc_normal.value)||0;
+    const abierto=parseInt(form.pc_abierto.value)||0;
+    const cerrado=parseInt(form.pc_cerrado.value)||0;
+    const poda=parseInt(form.pc_poda.value)||0;
+    const suma=normal+abierto+cerrado+poda;
+    if(total<1||total>30||suma!==total){
+      alert("Verifica los puntos de corte: la suma debe ser igual al total de tallos y no superar 30.");
+      e.preventDefault();
+    }
+  });
+</script>
+</body>
+</html>
+
+
